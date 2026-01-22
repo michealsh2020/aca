@@ -22,9 +22,7 @@ permissions:
 jobs:
   build:
     name: Deploy
-    runs-on:
-      group: linux-x64
-      labels: sks-ubuntu-latest-2core-preview
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
