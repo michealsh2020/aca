@@ -1,0 +1,75 @@
+name: ACA - Env - Manage secrets from Key Vault
+
+on:
+  workflow_dispatch:
+    inputs:
+      targetEnvironment:
+        description: 'Target environment'
+        type: choice
+        required: true
+        options:
+          - aca-dev
+
+      # Comma-separated Key Vault secret names (in the vault)
+      keyVaultSecretNames:
+        description: "Key Vault secret names (comma-separated). Example: azure-openai-key,db-connection"
+        required: true
+
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.targetEnvironment }}
+
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.CREDS }}
+
+      - name: Create/Update ACA secrets from Key Vault
+        shell: pwsh
+        env:
+          KV_NAME: ${{ vars.KEYVAULT_NAME }}
+          ACA_RG: ${{ vars.ACA_RESOURCE_GROUP }}
+          ACA_NAME: ${{ vars.ACA_APP_NAME }}
+          KV_SECRET_NAMES: ${{ inputs.keyVaultSecretNames }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $names = $env:KV_SECRET_NAMES -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          if (-not $names) { throw "No Key Vault secret names provided." }
+
+          $secretsArgs = @()
+
+          foreach ($name in $names) {
+            $cleanUrl = "https://$env:KV_NAME.vault.azure.net/secrets/$name"
+            $secretsArgs += "$name=keyvaultref:$cleanUrl,identityref:system"
+          }
+
+          az containerapp secret set -g $env:ACA_RG -n $env:ACA_NAME --secrets $secretsArgs
+
+      - name: Set ACA env vars from secret names (azure_openai_key -> azure-openai-key)
+        shell: pwsh
+        env:
+          ACA_RG: ${{ vars.ACA_RESOURCE_GROUP }}
+          ACA_NAME: ${{ vars.ACA_APP_NAME }}
+          KV_SECRET_NAMES: ${{ inputs.keyVaultSecretNames }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $names = $env:KV_SECRET_NAMES -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          if (-not $names) { throw "No Key Vault secret names provided." }
+
+          $envArgs = @()
+
+          foreach ($s in $names) {
+            $envName = $s.Replace('-', '_').ToUpper()
+            $envArgs += "$envName=secretref:$s"
+          }
+
+          az containerapp update -g $env:ACA_RG -n $env:ACA_NAME --set-env-vars $envArgs --only-show-errors

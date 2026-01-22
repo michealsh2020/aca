@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "build" } }
+  ],
+  "routes": [
+    { "src": "/api/set-key", "dest": "/api/set-key.js" },
+    { "src": "/api/reset-key", "dest": "/api/reset-key.js" },
+    { "src": "/api/blob/(?<name>[^/]+)", "dest": "/api/blob/[name].js?name=$name" },
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/favicon.ico", "dest": "/favicon.ico" },
+    { "src": "/logo192.png", "dest": "/logo192.png" },
+    { "src": "/logo512.png", "dest": "/logo512.png" },
+    { "src": "/manifest.json", "dest": "/manifest.json" },
+    { "src": "/robots.txt", "dest": "/robots.txt" },
+    { "src": "/images/(.*)", "dest": "/images/$1" },
+    { "src": "/(.*)\\.css", "dest": "/$1.css", "headers": { "Content-Type": "text/css" } },
+    { "src": "/(.*)", "dest": "/index.html", "check": true }
+  ]
+} 

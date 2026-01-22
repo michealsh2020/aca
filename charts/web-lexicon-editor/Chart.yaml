@@ -1,0 +1,6 @@
+apiVersion: v2
+name: web-lexicon-editor
+description: web-lexicon-editor Helm chart for Kubernetes
+type: application
+version: 0.0.1-alpha.16 # {"$imagepolicy": "tenant-content-dev:web-lexicon-editor:tag"}
+appVersion: 0.0.1-alpha.16 # {"$imagepolicy": "tenant-content-dev:web-lexicon-editor:tag"} 
